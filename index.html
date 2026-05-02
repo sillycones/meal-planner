@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>Meal Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-family: 'DM Sans', system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+  body {
+    background: #fff;
+    color: #1a1a1a;
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+
+  /* Header */
+  .header { margin-bottom: 28px; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: #111; }
+  .header p { font-size: 13px; color: #777; margin-top: 4px; font-family: 'DM Mono', monospace; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 24px;
+    border-bottom: 2px solid #e5e5e5; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab {
+    padding: 10px 16px; font-size: 13px; font-weight: 600;
+    font-family: 'DM Sans', system-ui; cursor: pointer;
+    border: none; background: none; color: #999;
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    white-space: nowrap; transition: all 0.15s;
+  }
+  .tab.active { color: #111; border-bottom-color: #111; }
+
+  /* Sections */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #999; margin-bottom: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+
+  /* Day rows */
+  .day-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .day-label {
+    width: 36px; font-size: 12px; font-weight: 700; color: #555;
+    font-family: 'DM Mono', monospace; flex-shrink: 0;
+  }
+  .chip-scroll {
+    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Chips */
+  .chip, .protein-chip {
+    font-family: 'DM Sans', system-ui; cursor: pointer;
+    white-space: nowrap; transition: all 0.12s; flex-shrink: 0;
+    border-radius: 20px;
+  }
+  .chip {
+    padding: 6px 12px; font-size: 12px; font-weight: 500;
+    border: 1.5px solid #ddd; background: #fff; color: #444;
+  }
+  .chip.selected { font-weight: 700; border: 2px solid #111; background: #111; color: #fff; }
+  .protein-chip {
+    padding: 8px 14px; font-size: 13px; font-weight: 500;
+    border: 1.5px solid #ddd; background: #fff; color: #444;
+  }
+  .protein-chip.selected { font-weight: 700; border: 2px solid #111; background: #111; color: #fff; }
+  .protein-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* Badge */
+  .badge {
+    display: inline-flex; align-items: center; font-size: 11px;
+    font-weight: 700; font-family: 'DM Mono', monospace; color: #fff;
+    border-radius: 10px; padding: 2px 8px; margin-left: 8px;
+  }
+  .badge.ok { background: #22c55e; }
+  .badge.warn { background: #f59e0b; }
+
+  /* Cards */
+  .card {
+    background: #fafafa; border: 1px solid #eee;
+    border-radius: 10px; padding: 14px; margin-bottom: 8px;
+  }
+  .card-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .card-detail { font-size: 12px; color: #666; line-height: 1.5; }
+  .card-detail b { font-weight: 600; color: #444; }
+
+  /* Checklist */
+  .check-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+  }
+  .check-box {
+    width: 20px; height: 20px; border-radius: 4px;
+    border: 2px solid #ccc; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.12s;
+  }
+  .check-box.on { border: none; background: #111; }
+  .check-label { font-size: 14px; color: #333; transition: all 0.12s; }
+  .check-label.done { color: #aaa; text-decoration: line-through; }
+  .empty-state { font-size: 13px; color: #aaa; font-style: italic; padding: 12px 0; }
+
+  /* Category headers */
+  .cat-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0 8px; cursor: pointer; user-select: none;
+    -webkit-user-select: none; border-bottom: 1px solid #eee;
+  }
+  .cat-left { display: flex; align-items: center; gap: 8px; }
+  .cat-name { font-size: 14px; font-weight: 700; color: #222; }
+  .cat-count { font-size: 11px; font-family: 'DM Mono', monospace; color: #999; font-weight: 600; }
+  .chevron {
+    font-size: 12px; color: #bbb; transition: transform 0.15s;
+  }
+  .chevron.open { transform: rotate(180deg); }
+  .staple-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0 7px 28px; border-bottom: 1px solid #f5f5f5;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+  }
+
+  .divider { height: 1px; background: #e0e0e0; margin: 24px 0 20px; }
+  .reset-btn {
+    font-size: 11px; font-family: 'DM Mono', monospace; color: #999;
+    background: none; border: 1px solid #ddd; border-radius: 6px;
+    padding: 4px 10px; cursor: pointer;
+  }
+  .reset-btn:hover { color: #666; border-color: #bbb; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  EDIT YOUR DATA HERE                                           ║
+// ║  Change items, labels, add new entries — then commit to GitHub ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const PATTERNS = [
+  {
+    id: "ramen", name: "Upgraded Ramen", emoji: "🍜",
+    protein: "Any + egg", carb: "Instant noodles",
+    veg: "Spring onion, greens, bean sprouts",
+    flavour: "Packet + sesame oil + chilli oil",
+    freshNeeds: ["eggs", "spring_onions", "leafy_green", "bean_sprouts"],
+    pantryNeeds: ["instant_ramen", "sesame_oil", "chilli_oil"],
+  },
+  {
+    id: "stirfry", name: "Stir Fry", emoji: "🥘",
+    protein: "Chicken or tofu", carb: "Rice",
+    veg: "Any 2–3 veg",
+    flavour: "Soy + oyster + garlic + ginger",
+    freshNeeds: ["garlic", "ginger", "hearty_veg_1", "hearty_veg_2", "onions"],
+    pantryNeeds: ["soy_sauce", "oyster_sauce", "rice"],
+  },
+  {
+    id: "pasta", name: "Pasta", emoji: "🍝",
+    protein: "Mince", carb: "Dried pasta",
+    veg: "Onion + tinned tom + spinach",
+    flavour: "Olive oil + garlic + paprika",
+    freshNeeds: ["onions", "garlic", "leafy_green"],
+    pantryNeeds: ["dried_pasta", "tinned_tomatoes", "olive_oil", "paprika"],
+  },
+  {
+    id: "sheetpan", name: "Sheet Pan", emoji: "🫕",
+    protein: "Chicken or fish", carb: "Rice or roast potato",
+    veg: "Hearty veg + onion + carrot",
+    flavour: "Lemon + olive oil + cumin/paprika",
+    freshNeeds: ["onions", "carrots", "hearty_veg_1", "lemon"],
+    pantryNeeds: ["olive_oil", "cumin", "paprika", "rice"],
+  },
+  {
+    id: "friedrice", name: "Fried Rice", emoji: "🍳",
+    protein: "Egg + leftovers", carb: "Day-old rice",
+    veg: "Spring onion + carrot + whatever's left",
+    flavour: "Soy + sesame + fish sauce",
+    freshNeeds: ["eggs", "spring_onions", "carrots"],
+    pantryNeeds: ["soy_sauce", "sesame_oil", "fish_sauce", "rice"],
+  },
+  {
+    id: "noodlesoup", name: "Noodle Soup", emoji: "🥣",
+    protein: "Pork mince or chicken", carb: "Rice noodles or instant",
+    veg: "Bok choy + mushrooms + ginger",
+    flavour: "Stock + soy + fish sauce + lime",
+    freshNeeds: ["ginger", "leafy_green", "mushrooms", "lime"],
+    pantryNeeds: ["stock", "soy_sauce", "fish_sauce", "instant_ramen"],
+  },
+  {
+    id: "tacos", name: "Tacos / Wraps", emoji: "🌮",
+    protein: "Mince or chicken", carb: "Tortillas",
+    veg: "Capsicum + onion + lime",
+    flavour: "Cumin + paprika + chilli",
+    freshNeeds: ["onions", "capsicum", "lime"],
+    pantryNeeds: ["tortillas", "cumin", "paprika", "chilli_oil"],
+  },
+  {
+    id: "out", name: "Eating Out", emoji: "🍻",
+    protein: "—", carb: "—", veg: "—", flavour: "—",
+    freshNeeds: [], pantryNeeds: [],
+  },
+];
+
+const PROTEINS = [
+  { id: "chicken", name: "Chicken thighs (~600g)", emoji: "🍗" },
+  { id: "beef_mince", name: "Beef mince (500g)", emoji: "🥩" },
+  { id: "pork_mince", name: "Pork mince (500g)", emoji: "🐖" },
+  { id: "fish", name: "Frozen fish fillets", emoji: "🐟" },
+  { id: "tofu", name: "Firm tofu (1 block)", emoji: "🫘" },
+];
+
+const FRESH_ITEMS = {
+  eggs: "Eggs (dozen)",
+  spring_onions: "Spring onions × 2",
+  leafy_green: "Leafy green (spinach or bok choy)",
+  hearty_veg_1: "Hearty veg #1 (broccoli / zucchini / green beans)",
+  hearty_veg_2: "Hearty veg #2 (capsicum / mushrooms)",
+  onions: "Brown onions × 3–4",
+  garlic: "Garlic bulb",
+  ginger: "Fresh ginger knub",
+  lemon: "Lemon",
+  lime: "Lime",
+  carrots: "Carrots",
+  bean_sprouts: "Bean sprouts (buy mid-week)",
+  mushrooms: "Mushrooms",
+  capsicum: "Capsicum",
+};
+
+const PANTRY_ITEMS = {
+  soy_sauce: "Soy sauce",
+  sesame_oil: "Sesame oil",
+  chilli_oil: "Chilli oil / gochugaru",
+  fish_sauce: "Fish sauce",
+  oyster_sauce: "Oyster sauce",
+  mirin: "Mirin",
+  rice_vinegar: "Rice vinegar",
+  olive_oil: "Olive oil",
+  cumin: "Ground cumin",
+  paprika: "Smoked paprika",
+  stock: "Stock cubes / Better Than Bouillon",
+  tinned_tomatoes: "Tinned tomatoes",
+  coconut_milk: "Coconut milk",
+  dried_pasta: "Dried pasta",
+  rice: "Rice",
+  instant_ramen: "Instant ramen packs (Shin Ramyun etc)",
+  tortillas: "Tortillas",
+  frozen_edamame: "Frozen edamame",
+  frozen_peas: "Frozen peas",
+};
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  WEEKLY STAPLES — edit these lists to match what you buy       ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+const STAPLES = [
+  {
+    id: "breakfast", name: "Breakfast", icon: "🌅",
+    items: [
+      { id: "bread", label: "Bread (sourdough / wholemeal)" },
+      { id: "butter", label: "Butter" },
+      { id: "cereal", label: "Cereal or granola" },
+      { id: "yoghurt", label: "Yoghurt (Greek / natural)" },
+      { id: "milk", label: "Milk" },
+      { id: "honey", label: "Honey or jam" },
+      { id: "oats", label: "Oats" },
+    ],
+  },
+  {
+    id: "lunch", name: "Lunch", icon: "🥪",
+    items: [
+      { id: "deli", label: "Deli meat (turkey / ham)" },
+      { id: "cheese_l", label: "Cheese (sliced / cheddar)" },
+      { id: "wraps_l", label: "Wraps / rolls" },
+      { id: "tinned_tuna", label: "Tinned tuna / salmon" },
+      { id: "salad_leaves", label: "Salad leaves / mixed greens" },
+      { id: "tomatoes_l", label: "Tomatoes" },
+      { id: "avocado", label: "Avocado" },
+      { id: "hummus", label: "Hummus or dip" },
+    ],
+  },
+  {
+    id: "snacks", name: "Snacks & Fruit", icon: "🍎",
+    items: [
+      { id: "bananas", label: "Bananas" },
+      { id: "apples", label: "Apples" },
+      { id: "seasonal_fruit", label: "Seasonal fruit" },
+      { id: "nuts", label: "Mixed nuts" },
+      { id: "crackers", label: "Crackers / rice cakes" },
+      { id: "cheese_s", label: "Cheese (snacking)" },
+    ],
+  },
+  {
+    id: "drinks", name: "Drinks", icon: "☕",
+    items: [
+      { id: "coffee_beans", label: "Coffee beans" },
+      { id: "milk_d", label: "Milk (if not already grabbed)" },
+      { id: "juice", label: "Juice" },
+      { id: "sparkling", label: "Sparkling water" },
+      { id: "tea", label: "Tea" },
+    ],
+  },
+  {
+    id: "treats", name: "Treats", icon: "🍫",
+    items: [
+      { id: "chocolate", label: "Chocolate" },
+      { id: "biscuits", label: "Biscuits" },
+      { id: "chips", label: "Chips / crisps" },
+      { id: "icecream", label: "Ice cream" },
+    ],
+  },
+];
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  APP CODE — you probably don't need to touch below here        ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+const STORAGE_KEY = "mealplanner_v1";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { plan: {}, proteins: [], checked: {}, expanded: {}, view: "plan" };
+}
+
+function saveState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+const state = loadState();
+if (!state.expanded || Object.keys(state.expanded).length === 0) {
+  state.expanded = Object.fromEntries(STAPLES.map(c => [c.id, true]));
+}
+
+const tick = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function persist() { saveState(state); }
+
+function setView(v) { state.view = v; persist(); render(); }
+
+function toggleMeal(day, id) {
+  state.plan[day] = state.plan[day] === id ? null : id;
+  persist(); render();
+}
+
+function toggleProtein(id) {
+  const i = state.proteins.indexOf(id);
+  if (i >= 0) state.proteins.splice(i, 1); else state.proteins.push(id);
+  persist(); render();
+}
+
+function toggleCheck(key) {
+  state.checked[key] = !state.checked[key];
+  persist(); render();
+}
+
+function toggleExpand(id) {
+  state.expanded[id] = !state.expanded[id];
+  persist(); render();
+}
+
+function resetChecks() {
+  state.checked = {};
+  persist(); render();
+}
+
+function getFreshList() {
+  const needs = new Set();
+  Object.values(state.plan).forEach(pid => {
+    if (!pid) return;
+    const p = PATTERNS.find(x => x.id === pid);
+    if (p) p.freshNeeds.forEach(n => needs.add(n));
+  });
+  return [...needs].sort();
+}
+
+function getPantryList() {
+  const needs = new Set(["frozen_edamame", "frozen_peas"]);
+  Object.values(state.plan).forEach(pid => {
+    if (!pid) return;
+    const p = PATTERNS.find(x => x.id === pid);
+    if (p) p.pantryNeeds.forEach(n => needs.add(n));
+  });
+  return [...needs].sort();
+}
+
+function checkbox(on) {
+  return `<div class="check-box${on ? ' on' : ''}">${on ? tick : ''}</div>`;
+}
+
+function render() {
+  const v = state.view;
+  const mealsPlanned = Object.values(state.plan).filter(x => x && x !== "out").length;
+  const freshList = getFreshList();
+  const pantryList = getPantryList();
+
+  let html = '';
+
+  // Header
+  html += `<div class="header"><h1>Weekly Meal Planner</h1><p>2 people · 5–6 dinners · western + asian</p></div>`;
+
+  // Tabs
+  html += `<div class="tabs">`;
+  html += `<button class="tab${v==='plan'?' active':''}" onclick="setView('plan')">Sunday Plan</button>`;
+  html += `<button class="tab${v==='ref'?' active':''}" onclick="setView('ref')">Meal Patterns</button>`;
+  html += `<button class="tab${v==='shop'?' active':''}" onclick="setView('shop')">Shopping List</button>`;
+  html += `</div>`;
+
+  // ── SUNDAY PLAN ──
+  if (v === 'plan') {
+    html += `<div class="section">`;
+    html += `<div style="display:flex;align-items:center;margin-bottom:12px">`;
+    html += `<div class="section-title">Assign meals</div>`;
+    html += `<span class="badge ${mealsPlanned>=5?'ok':'warn'}">${mealsPlanned}/6</span>`;
+    html += `</div>`;
+
+    DAYS.forEach(day => {
+      html += `<div class="day-row"><div class="day-label">${day}</div><div class="chip-scroll">`;
+      PATTERNS.forEach(p => {
+        const sel = state.plan[day] === p.id;
+        html += `<button class="chip${sel?' selected':''}" onclick="toggleMeal('${day}','${p.id}')">${p.emoji} ${p.name}</button>`;
+      });
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="section"><div class="section-title">Proteins this week (pick 2–3)</div><div class="protein-wrap">`;
+    PROTEINS.forEach(p => {
+      const sel = state.proteins.includes(p.id);
+      html += `<button class="protein-chip${sel?' selected':''}" onclick="toggleProtein('${p.id}')">${p.emoji} ${p.name}</button>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // ── MEAL PATTERNS ──
+  if (v === 'ref') {
+    html += `<div class="section"><div class="section-title">Meal pattern reference</div>`;
+    PATTERNS.filter(p => p.id !== 'out').forEach(p => {
+      html += `<div class="card"><div class="card-name">${p.emoji} ${p.name}</div>`;
+      html += `<div class="card-detail"><b>Protein:</b> ${p.protein}<br><b>Carb:</b> ${p.carb}<br><b>Veg:</b> ${p.veg}<br><b>Flavour:</b> ${p.flavour}</div></div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── SHOPPING LIST ──
+  if (v === 'shop') {
+    // Weekly staples
+    html += `<div class="section"><div class="section-header"><div class="section-title">Weekly staples</div><button class="reset-btn" onclick="resetChecks()">Reset all ✕</button></div>`;
+    STAPLES.forEach(cat => {
+      const open = state.expanded[cat.id] !== false;
+      const done = cat.items.filter(i => state.checked['s_'+i.id]).length;
+      html += `<div class="cat-header" onclick="toggleExpand('${cat.id}')"><div class="cat-left"><span>${cat.icon}</span><span class="cat-name">${cat.name}</span><span class="cat-count">${done}/${cat.items.length}</span></div><span class="chevron${open?' open':''}">▼</span></div>`;
+      if (open) {
+        cat.items.forEach(item => {
+          const k = 's_'+item.id;
+          const on = !!state.checked[k];
+          html += `<div class="staple-row" onclick="toggleCheck('${k}')">${checkbox(on)}<span class="check-label${on?' done':''}">${item.label}</span></div>`;
+        });
+      }
+    });
+    html += `</div>`;
+
+    html += `<div class="divider"></div>`;
+
+    // Dinner fresh
+    html += `<div class="section"><div class="section-title">Dinner — fresh (from your plan)</div>`;
+    if (freshList.length === 0) {
+      html += `<div class="empty-state">Assign meals in the Sunday Plan tab first</div>`;
+    } else {
+      freshList.forEach(key => {
+        const k = 'f_'+key;
+        const on = !!state.checked[k];
+        html += `<div class="check-row" onclick="toggleCheck('${k}')">${checkbox(on)}<span class="check-label${on?' done':''}">${FRESH_ITEMS[key]}</span></div>`;
+      });
+    }
+    html += `</div>`;
+
+    // Proteins
+    html += `<div class="section"><div class="section-title">Dinner — proteins</div>`;
+    if (state.proteins.length === 0) {
+      html += `<div class="empty-state">Pick proteins in the Sunday Plan tab</div>`;
+    } else {
+      state.proteins.forEach(id => {
+        const p = PROTEINS.find(x => x.id === id);
+        const k = 'p_'+id;
+        const on = !!state.checked[k];
+        html += `<div class="check-row" onclick="toggleCheck('${k}')">${checkbox(on)}<span class="check-label${on?' done':''}">${p.emoji} ${p.name}</span></div>`;
+      });
+    }
+    html += `</div>`;
+
+    // Pantry
+    html += `<div class="section"><div class="section-title">Pantry — check what needs restocking</div>`;
+    pantryList.forEach(key => {
+      const k = 'y_'+key;
+      const on = !!state.checked[k];
+      html += `<div class="check-row" onclick="toggleCheck('${k}')">${checkbox(on)}<span class="check-label${on?' done':''}">${PANTRY_ITEMS[key]}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  document.getElementById('app').innerHTML = html;
+}
+
+render();
+</script>
+</body>
+</html>
